@@ -1,0 +1,18 @@
+// prisma/schema/main.prisma
+
+generator client {
+  provider = "prisma-client"
+  output   = "../../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ContentStatus {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+  ARCHIVED
+  REJECTED
+}

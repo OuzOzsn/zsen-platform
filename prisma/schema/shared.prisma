@@ -1,0 +1,98 @@
+// ============================================================
+// shared.prisma — Paylaşılan Modeller
+// (Category, Tag, Comment, Like)
+// ============================================================
+
+// ── Category ─────────────────────────────────────────────────
+// Post ve Listing tarafından ortak kullanılır.
+// postType null ise tüm tiplere açıktır.
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  slug        String    @unique
+  description String?
+  iconUrl     String?
+
+  // Self-referential (alt kategoriler)
+  parentId String?
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryTree")
+
+  // Hangi içerik tipine ait? (null = hepsi)
+  forPosts    Boolean @default(true)
+  forListings Boolean @default(true)
+
+  posts    Post[]
+  listings Listing[]
+
+  createdAt DateTime @default(now())
+
+  @@index([slug])
+  @@map("categories")
+}
+
+// ── Tag ──────────────────────────────────────────────────────
+
+model Tag {
+  id    String    @id @default(cuid())
+  name  String    @unique
+  slug  String    @unique
+  posts PostTag[]
+
+  @@index([slug])
+  @@map("tags")
+}
+
+// ── Comment ──────────────────────────────────────────────────
+// Polymorphic: Post veya Listing'e ait olabilir.
+
+model Comment {
+  id String @id @default(cuid())
+
+  // Polymorphic bağlantı (biri dolu olmalı)
+  postId    String?
+  post      Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  listingId String?
+  listing   Listing? @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id])
+
+  // Nested yanıtlar
+  parentId String?
+  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies  Comment[] @relation("CommentReplies")
+
+  content  String  @db.Text
+  isEdited Boolean @default(false)
+  isHidden Boolean @default(false) // Moderatör tarafından gizlendi
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([postId])
+  @@index([listingId])
+  @@index([authorId])
+  @@map("comments")
+}
+
+// ── Like ─────────────────────────────────────────────────────
+// Polymorphic: Post veya Listing beğenisi.
+
+model Like {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  postId    String?
+  post      Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  listingId String?
+  listing   Listing? @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId])
+  @@unique([userId, listingId])
+  @@map("likes")
+}

@@ -1,0 +1,102 @@
+// ============================================================
+// listing.prisma — İlan Domaini
+// ============================================================
+
+// ── Enum'lar ─────────────────────────────────────────────────
+
+enum ListingType {
+  FOR_SALE   // Satılık
+  FOR_RENT   // Kiralık
+  WANTED     // Aranıyor
+  FREE       // Ücretsiz
+  EXCHANGE   // Takas
+}
+
+enum ListingStatus {
+  ACTIVE
+  SOLD
+  RENTED
+  EXPIRED
+  CANCELLED
+}
+
+// ── Modeller ─────────────────────────────────────────────────
+
+model Listing {
+  id            String        @id @default(cuid())
+  status        ContentStatus @default(DRAFT) // base.prisma'dan
+  listingStatus ListingStatus @default(ACTIVE)
+  listingType   ListingType   @default(FOR_SALE)
+
+  title        String
+  slug         String   @unique
+  description  String   @db.Text
+  price        Decimal? @db.Decimal(12, 2)
+  currency     String?  @default("TRY")
+  isNegotiable Boolean  @default(false)
+
+  // Konum
+  country  String?
+  city     String?
+  district String?
+  address  String?
+  latitude  Float?
+  longitude Float?
+
+  // Medya & Özellikler
+  images     ListingImage[]
+  attributes ListingAttribute[]
+
+  // İlişkiler
+  authorId   String
+  author     User      @relation(fields: [authorId], references: [id])
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id])
+  comments   Comment[]
+  likes      Like[]
+
+  // Denormalized sayaçlar
+  viewCount Int @default(0)
+  likeCount Int @default(0)
+
+  expiresAt   DateTime?
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([listingType, listingStatus])
+  @@index([authorId])
+  @@index([city])
+  @@index([publishedAt])
+  @@map("listings")
+}
+
+model ListingImage {
+  id        String  @id @default(cuid())
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  url     String
+  key     String? // Storage key
+  altText String?
+  order   Int     @default(0)
+  isCover Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([listingId])
+  @@map("listing_images")
+}
+
+model ListingAttribute {
+  id        String  @id @default(cuid())
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  key   String // "Alan", "Oda Sayısı" vb.
+  value String
+  unit  String? // "m²", "km" vb.
+
+  @@index([listingId])
+  @@map("listing_attributes")
+}

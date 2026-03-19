@@ -1,0 +1,164 @@
+// ============================================================
+// user.prisma — Kullanıcı Domaini
+// ============================================================
+
+// ── Enum'lar ─────────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  EDITOR
+  USER
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  PENDING_VERIFICATION
+  DELETED
+}
+
+enum SocialPlatform {
+  TWITTER
+  INSTAGRAM
+  LINKEDIN
+  FACEBOOK
+  YOUTUBE
+  GITHUB
+  WEBSITE
+  OTHER
+}
+
+// ── Modeller ─────────────────────────────────────────────────
+
+model User {
+  id            String     @id @default(cuid())
+  email         String     @unique
+  emailVerified DateTime?
+  passwordHash  String?
+  username      String     @unique
+  displayName   String?
+
+  role          Role       @default(USER)
+  status        UserStatus @default(PENDING_VERIFICATION)
+
+  // 1-to-1
+  profile       UserProfile?
+
+  // İçerik ilişkileri (diğer domainlerden)
+  posts         Post[]
+  listings      Listing[]
+  comments      Comment[]
+  likes         Like[]
+
+  // Auth
+  sessions           Session[]
+  verificationTokens VerificationToken[]
+  passwordResets     PasswordResetToken[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lastLoginAt DateTime?
+  deletedAt   DateTime? // Soft delete
+
+  @@index([email])
+  @@index([username])
+  @@index([role])
+  @@index([status])
+  @@map("users")
+}
+
+model UserProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Avatar
+  avatarUrl String?
+  avatarKey String? // S3/R2 storage key
+
+  // Bio
+  bio      String? @db.Text
+  shortBio String? @db.VarChar(160)
+
+  // Konum
+  country     String?
+  city        String?
+  district    String?
+  postalCode  String?
+  latitude    Float?
+  longitude   Float?
+  showLocation Boolean @default(true)
+
+  // Sosyal linkler
+  socialLinks SocialLink[]
+
+  // Denormalized sayaçlar
+  postCount    Int @default(0)
+  listingCount Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user_profiles")
+}
+
+model SocialLink {
+  id        String         @id @default(cuid())
+  profileId String
+  profile   UserProfile    @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  platform  SocialPlatform
+  url       String
+  label     String? // "Kişisel Blog" vb.
+
+  createdAt DateTime @default(now())
+
+  @@unique([profileId, platform])
+  @@map("social_links")
+}
+
+// ── Auth Yardımcı Modelleri ───────────────────────────────────
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  token     String   @unique
+  userAgent String?
+  ipAddress String?
+  expiresAt DateTime
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+  @@map("sessions")
+}
+
+model VerificationToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  token     String   @unique
+  expiresAt DateTime
+
+  createdAt DateTime @default(now())
+
+  @@map("verification_tokens")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  token     String    @unique
+  usedAt    DateTime?
+  expiresAt DateTime
+
+  createdAt DateTime @default(now())
+
+  @@map("password_reset_tokens")
+}

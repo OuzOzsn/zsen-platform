@@ -1,0 +1,71 @@
+// ============================================================
+// post.prisma — Blog & Haber/Makale Domaini
+// ============================================================
+
+// ── Enum'lar ─────────────────────────────────────────────────
+
+enum PostType {
+  BLOG
+  NEWS
+}
+
+// ── Modeller ─────────────────────────────────────────────────
+
+model Post {
+  id     String        @id @default(cuid())
+  type   PostType
+  status ContentStatus @default(DRAFT) // base.prisma'dan
+
+  title         String
+  slug          String  @unique
+  excerpt       String? @db.Text
+  content       String  @db.Text
+  coverImageUrl String?
+  coverImageKey String? // Storage key
+
+  // İlişkiler
+  authorId   String
+  author     User      @relation(fields: [authorId], references: [id])
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id])
+  tags       PostTag[]
+  comments   Comment[]
+  likes      Like[]
+
+  // SEO
+  metaTitle       String?
+  metaDescription String? @db.VarChar(160)
+  canonicalUrl    String?
+
+  // Denormalized sayaçlar
+  viewCount    Int @default(0)
+  likeCount    Int @default(0)
+  commentCount Int @default(0)
+
+  // Editör takibi
+  editedById String?
+  editedAt   DateTime?
+
+  // Zamanlama
+  publishedAt DateTime?
+  scheduledAt DateTime? // İleri tarihli yayın
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([type, status])
+  @@index([authorId])
+  @@index([slug])
+  @@index([publishedAt])
+  @@map("posts")
+}
+
+model PostTag {
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tagId  String
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
+  @@map("post_tags")
+}

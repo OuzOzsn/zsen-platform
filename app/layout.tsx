@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { prisma } from '@/lib/prisma';
 import "./globals.css";
+
+prisma.$connect()
+  .then(() => console.log("✅ Veritabanı bağlantısı kuruldu"))
+  .catch((e) => console.error("❌ Veritabanı bağlantısı kurulamadı:", e))
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
