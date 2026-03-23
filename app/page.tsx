@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { routes } from "@/lib/routes";
+
 export default function Home() {
   return (
     <div>
-      <Link href={"./"}>Ay Papi</Link>
+      <Link href={routes.user.create}>Üye Ol</Link>
     </div>
   );
 }
