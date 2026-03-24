@@ -47,7 +47,7 @@ export default function CreateUserPage() {
             <form onSubmit={handleSubmit(onSubmit)} className="w-full max-w-sm space-y-2">
                 <h1 className="text-xl font-semibold mb-4">Kayıt Ol</h1>
 
-                <FieldGroup>
+                <FieldGroup className="gap-5">
                     {/* Email */}
                     <Field>
                         <FieldLabel>E-Mail</FieldLabel>
