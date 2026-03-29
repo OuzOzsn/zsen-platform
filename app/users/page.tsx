@@ -1,24 +1,25 @@
-import { columns, Payment } from "./columns"
-import { DataTable } from "./data-table"
+import { User } from "../generated/prisma/client";
+import { columns } from "./columns";
+import { DataTable } from "./data-table";
+import { UserTableClient } from "./operations";
 
-async function getData(): Promise<Payment[]> {
-  // Fetch data from your API here.
-  return [
-    {
-      id: "728ed52f",
-      amount: 100,
-      status: "pending",
-      email: "m@example.com",
-    },
-  ]
+async function getData(): Promise<User[]> {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/users`, {
+    cache: "no-store",
+  });
+  
+  if (!res.ok) {
+    const errorData = await res.json();
+    throw new Error(errorData.message || "Veri alınamadı");
+  }
+  return res.json();
 }
 
-export default async function DemoPage() {
-  const data = await getData()
 
-  return (
-    <div className="container mx-auto py-10">
-      <DataTable columns={columns} data={data} />
-    </div>
-  )
+export default async function AdminUserViewList() {
+  const data = await getData();
+
+  return(
+    <UserTableClient initialData={data}/>
+  );
 }

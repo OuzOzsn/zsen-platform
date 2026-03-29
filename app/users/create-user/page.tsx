@@ -8,25 +8,29 @@ import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@/
 import { Button } from "@/components/ui/button"
 import { routes } from "@/lib/routes"
 
-const schema = z.object({
+export const UserSchema = z.object({
     email: z.email("Geçerli bir email girin"),
-    username: z.string().min(3, "Ad soyad en az 3 karakter olmalı"),
-    password: z.string().min(6, "Şifre en az 6 karakter olmalı"),
+    username: z.string()
+    .min(3, "Kullanıcı adı en az 3 karakter olmalı")
+    .regex(/^[a-zA-Z0-9_]+$/, "Kullanıcı adı sadece harf, rakam ve _ içerebilir"),
+    displayName: z.string().min(3, "Ad soyad en az 3 karakter olmalı"),
+    password: z.string()
+    .min(6, "Şifre en az 6 karakter olmalı")
+    .regex(/^\S+$/, "Şifre boşluk içeremez"),
     passwordConfirm: z.string(),
 }).refine(d => d.password === d.passwordConfirm, {
     message: "Şifreler eşleşmiyor",
     path: ["passwordConfirm"],
 })
 
-type FormData = z.infer<typeof schema>
+type FormData = z.infer<typeof UserSchema>
 
-export default function CreateUserPage() {
+export default function AdminUsersPage() {
     const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
-        resolver: zodResolver(schema),
-    })
+        resolver: zodResolver(UserSchema),
+    });
 
     const onSubmit = async (data: FormData) => {
-        console.log(data);
         const res = await fetch(routes.apiRoutes.user.create, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -48,6 +52,19 @@ export default function CreateUserPage() {
                 <h1 className="text-xl font-semibold mb-4">Kayıt Ol</h1>
 
                 <FieldGroup className="gap-5">
+
+                    {/* Ad Soyad */}
+                    <Field>
+                        <FieldLabel>Ad Soyad</FieldLabel>
+                        <InputGroup className="h-auto">
+                            <InputGroupInput placeholder="Tam isminizi girin" {...register("displayName")} />
+                            <InputGroupAddon align="block-start">
+                                <InputGroupText>Ad Soyad*</InputGroupText>
+                            </InputGroupAddon>
+                        </InputGroup>
+                        {errors.displayName && <FieldDescription className="text-red-500">{errors.displayName.message}</FieldDescription>}
+                    </Field>
+
                     {/* Email */}
                     <Field>
                         <FieldLabel>E-Mail</FieldLabel>
@@ -60,14 +77,11 @@ export default function CreateUserPage() {
                         {errors.email && <FieldDescription className="text-red-500">{errors.email.message}</FieldDescription>}
                     </Field>
 
-                    {/* Ad Soyad */}
+                    {/* Kullanıcı Adı */}
                     <Field>
-                        <FieldLabel>Ad Soyad</FieldLabel>
+                        <FieldLabel>Kullanıcı Adı</FieldLabel>
                         <InputGroup className="h-auto">
-                            <InputGroupInput placeholder="Tam isminizi girin" {...register("username")} />
-                            <InputGroupAddon align="block-start">
-                                <InputGroupText>Ad Soyad*</InputGroupText>
-                            </InputGroupAddon>
+                            <InputGroupInput placeholder="Kullanıcı Adınız" {...register("username")} />
                         </InputGroup>
                         {errors.username && <FieldDescription className="text-red-500">{errors.username.message}</FieldDescription>}
                     </Field>
